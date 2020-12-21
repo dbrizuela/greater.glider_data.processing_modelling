@@ -792,7 +792,7 @@ fit.set_all <- filter(fit.set_all, tsf >= 1)
 
 ##### Prepare variables
 
-# All variables have been resampled (500 m), projected (epsg:3577) and masked to background in ArcMap
+# All variables have been resampled (500 m), projected (epsg:3577) and masked to modelling extent
 vars_stack_all <- raster::stack(list.files(paste0(getwd(),"./spatial_data/variables_model"), pattern = '.asc', full.names=TRUE))
 crs(vars_stack_all) <- ("+init=epsg:3577")
 
