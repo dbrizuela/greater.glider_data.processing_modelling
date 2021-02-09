@@ -4,7 +4,7 @@
 
 #### Notes:
 
-### All the obtained records were combined into a single dataframe and columns names standardized by authors. If steps for processing raw exactly as acquired from data sources, please contact Diego Brizuela-Torres at diego.brizuela.t@gmail.com
+### All the raw records were combined into a single dataframe and columns names standardized by authors. If steps for processing raw exactly as acquired from data sources, please contact Diego Brizuela-Torres at diego.brizuela.t@gmail.com
 
 ### sources of data are: 
 # Victorian Biodiversity Atlas, Department of Environment, Land, Water and Planning, government of Victoria. Detailed species records, accessed Nov. 19, 2018
@@ -34,10 +34,10 @@ library(spatialEco)
 
 
 ##### load data
-load("./data/pvol_all.RData") # P. volans all records excepting 'State Forests Biodata'. 31965 records
-load("./data/pvol_SFB.RData") # P. volans from 'State Forest Biodata'. 9427 records
-load("./data/AM_all.RData") # All AM records excepting 'State Forest Biodata'. 326654 records
-load("./data/AM_SFB.RData") # AM records from 'State Forests Biodata'. 22408 records 
+load("./data/species_data/pvol_all.RData") # P. volans all records excepting 'State Forests Biodata'. 31965 records
+load("./data/species_data/pvol_SFB.RData") # P. volans from 'State Forest Biodata'. 9427 records
+load("./data/species_data/AM_all.RData") # All AM records excepting 'State Forest Biodata'. 326654 records
+load("./data/species_data/AM_SFB.RData") # AM records from 'State Forests Biodata'. 22408 records 
 
 
 ##### change name of records listed as P. volans volans to just P. volans. P. volans minor remains. Although we modelled all records of single species (see main text), we thought it was not a bad idea to keep track of the records originally recorded as P.volans minor
@@ -64,7 +64,7 @@ occ_all <- spTransform(occ_all, CRS("+init=epsg:3577"))
 ##### remove points outside study area 
 
 # load study area polygon
-bckgr_poly <- shapefile("./spatial_data/bckgr3577ok_proj.shp")
+bckgr_poly <- shapefile("./data/spatial_data/polygons/bckgr3577ok_proj.shp")
 crs(bckgr_poly) <- ("+init=epsg:3577")
 
 occ_all_bckgr <- occ_all[bckgr_poly,] # keep only records inside modelling extent 
@@ -121,6 +121,9 @@ pvol_all$presence.absence <- as.numeric(levels(pvol_all$presence.absence))[pvol_
 AM_all$presence.absence <- as.numeric(levels(AM_all$presence.absence))[AM_all$presence.absence] # make PA numeric
 
 occ_all <- rbind(pvol_all, AM_all)
+
+
+
 
 ##################################################################################################
 #################### 'State Forests Biodata' (SFB) processing ####################################
@@ -190,12 +193,11 @@ pvol_abs_SFB <- pvol_abs_SFB[, -17]
 pre_match <- pre_match[, -17]
 AM_abs.match <- AM_abs.match[, -17]
 
-# Merge pvol presences and AM records that matched with pvol abs. ## In these matches I'm incorporating presences and absences that matched reasonably as well as the 'inferred' absences that matched these records
+# Merge pvol presences and AM records that matched with pvol abs. ## In these matches I'm incorporating presences and absences that matched reasonably as well as the 'processed' absences that matched these records
 pvol_abs_pre.AM.match <- rbind(pvol_abs_SFB, pre_match, AM_abs.match) # n=132 
 
 pvol_abs_pre.AM.match$presence.absence[!pvol_abs_pre.AM.match$species %in% "Petauroides volans"] <- 0
 
-pvol_abs_pre.AM.match$species[!pvol_abs_pre.AM.match$species %in% "Petauroides volans"] <- "inferred_absence"
 
 
 
@@ -284,7 +286,6 @@ dat.survey.7days$presence.absence <- dat.survey.7days$PA
 
 #### merge dat.survey.7days with the previously subset pvol absencs and their matches.
 SFB_processed_all <- dplyr::bind_rows(dat.survey.7days, pvol_abs_pre.AM.match) # n = 3988   
-SFB_processed_all$species[!SFB_processed_all$species %in% "Petauroides volans"] <- "inferred_absence"
 
 # remove columns that won't be necessary anymore
 SFB_processed_all <- dplyr:: select(SFB_processed_all,  -c("SightingKey", "LocationKey", "Description", "SightingNotes", "SurveyID", "Count", "min.timediff", "max.timediff", "min.distdiff", "max.distdiff", "n.survey", "PA", "longitude.GDA94.1", "latitude.GDA94.1"))
@@ -420,9 +421,6 @@ crs(AM_dset_pvol) <- ("+init=epsg:3577")
 # create buffer around pvol presences
 pvol_pre_buff <- buffer(pvol_inf, width=500, dissolve=TRUE)
 
-# save shp just to make sure it's 500 radius (500m from the point outwards)
-# shapefile(pvol_pre_buff, "./outputs/pvol_pre_buff.shp") # i checked in ArcMap and it is indeed 500 m radius, so OK!
-
 # get AM records that that overlapp buffers polygons
 AM_dset_pvol_buff <- over(AM_dset_pvol, pvol_pre_buff, returnList = FALSE)
 AM_dset_pvol_buff <- as.data.frame(AM_dset_pvol_buff) 
@@ -453,7 +451,7 @@ PIA <- rbind(inf_abs, pvol_inf) # n = 9432
 # remove SFB columns from PIA
 PIA <- PIA %>% dplyr::select(-c("SightingKey", "LocationKey", "Description", "SightingNotes"))
 
-##### PA dataset. SFB_processed_all includes the inferred absences from AM records from SFB, but is effectively treated as PA:
+##### PA dataset. SFB_processed_all includes the 'processed' absences from AM records from SFB, but are effectively treated as PA:
 # first remove SFB columns from pvol_PAsurveys
 pvol_PAsurveys <- pvol_PAsurveys %>% dplyr::select(-c("SightingKey", "LocationKey", "Description", "SightingNotes"))
 
@@ -481,13 +479,13 @@ pvol_all <- dplyr::select(pvol_all, -c("count", "date", "accuracy", "detection.m
 pvol_pre <- pvol_all[pvol_all$presence.absence == 1, ] # n = 14745
 
 # load raster mask
-mask500m <- raster("./spatial_data/variables_model/anuc01_ok.asc")
+mask500m <- raster("./data/environmental_variables/anuc01_ok.asc")
 crs(mask500m) <- ("+init=epsg:3577")
 
 # keep one presence per cell
 pvol.cell500 <- cellFromXY(mask500m, pvol_pre[6:7])  
 pvol.cell500.dups <- which(duplicated(pvol.cell500)) 
-pvol_pre500 <- pvol_pre[-c(pvol.cell500.dups),]  # 9469 records
+pvol_pre500 <- pvol_pre[-c(pvol.cell500.dups),]  # 9551 records. This number might change when replicating
 
 rm(pvol.cell500, pvol.cell500.dups)
 
@@ -504,7 +502,7 @@ occ_all <- dplyr::select(occ_all, -c("count", "date", "accuracy", "detection.met
 # keep one occurrence per cell
 occ_all.cell500 <- cellFromXY(mask500m, occ_all[6:7])  
 occ_all.cell500.dups <- which(duplicated(occ_all.cell500)) 
-tgb <- occ_all[-c(occ_all.cell500.dups),] # 42171 records
+tgb <- occ_all[-c(occ_all.cell500.dups),] # 42262 records. This number might change when replicating
 
 rm(occ_all.cell500, occ_all.cell500.dups)
 
@@ -513,7 +511,7 @@ rm(occ_all.cell500, occ_all.cell500.dups)
 ##### Create bmodel background points
 
 # load bmodel (see main text) raster. For details on this raster creation please contact Diego Brizuela-Torres at diego.brizuela.t@gmail.com 
-bmodel_raster <- raster("./spatial_data/pred_roads_lcover.tif")
+bmodel_raster <- raster("./data/spatial_data/raster/pred_roads_lcover.tif")
 crs(bmodel_raster) <- ("+init=epsg:3577")
 
 # create 180000 points. Create more than 100000 (final amount of backgroun points to use) because I'll loose more points along the rest of the data processing steps. Once all these steps are done, I'll sandomnly subset the final 100000 points.
@@ -525,32 +523,35 @@ points_bmodel <- as.data.frame(xyFromCell(bmodel_raster, sample(which(!is.na(val
 
 # create bfile raster
 
-library(MASS)
-#points to create bfile based on all unique locations of occurrences
-points <- occ_all[,c(6,7)] # start from set of unique occurences I used for tgb
+# library(MASS)
+# #points to create bfile based on all unique locations of occurrences
+# points <- occ_all[,c(6,7)] # start from set of unique occurences I used for tgb
+# 
+# #rasterize points
+# points.ras <- rasterize(points, mask500m, 1)
+# rm(points)
+# 
+# # two-dimensional kernel density estimate. in thia case, it considers absences too. So it's a general representation of all sampling effort, not only of presences density.
+# points_1 <- which(values(points.ras) == 1)
+# points.locs <- coordinates(points.ras)[points_1, ]
+# 
+# dens <- kde2d(points.locs[,1], points.locs[,2], n = c(nrow(points.ras), ncol(points.ras)))
+# dens.ras <- raster(dens)
+# 
+# # standardize from 0 to 1
+# dens.ras_std <- raster.transformation(dens.ras, trans = "norm", smin = 0, smax = 1)
+# 
+# # crop raster to polygon
+# bfile_raster <- mask(dens.ras_std, bckgr_poly)
+# 
+# rm(dens.ras_std, dens, dens.ras, points_1, points.locs) # won't need these anymore
+# 
+# plot(bfile_raster, main="Bias file") # final bfile raster
+# 
+# writeRaster(bfile_raster, "./data/spatial_data/raster/bfile_raster.tif") # advisable to save raster, as it takes a long time to create
 
-#rasterize points
-points.ras <- rasterize(points, mask500m, 1)
-rm(points)
-
-# two-dimensional kernel density estimate. in thia case, it considers absences too. So it's a general representation of all sampling effort, not only of presences density.
-points_1 <- which(values(points.ras) == 1)
-points.locs <- coordinates(points.ras)[points_1, ]
-
-dens <- kde2d(points.locs[,1], points.locs[,2], n = c(nrow(points.ras), ncol(points.ras)))
-dens.ras <- raster(dens)
-
-# standardize from 0 to 1
-dens.ras_std <- raster.transformation(dens.ras, trans = "norm", smin = 0, smax = 1)
-
-# crop raster to polygon
-bfile_raster <- mask(dens.ras_std, bckgr_poly)
-
-rm(dens.ras_std, dens, dens.ras, points_1, points.locs) # won't need these anymore
-
-plot(bfile_raster, main="Bias file") # final bfile raster
-
-writeRaster(bfile_raster, "./spatial_data/bfile_raster.tif") # advisable to save raster, as it takes a long time to create
+# load raster already created:
+bfile_raster <- raster("./data/spatial_data/raster/bfile_raster.tif")
 
 ##### create 180000 points
 points_bfile <- as.data.frame(xyFromCell(bfile_raster, sample(which(!is.na(values(bfile_raster))), size=180000, prob=values(bfile_raster)[!is.na(values(bfile_raster))],replace=FALSE)))
@@ -569,7 +570,7 @@ points_bfile <- as.data.frame(xyFromCell(bfile_raster, sample(which(!is.na(value
 
 ##### 1. load spatial blocks
 
-fire_blocks.list <- list.files(paste0(getwd(),"./spatial_data/fire_blocks"), pattern = "\\.shp$", full.names=TRUE)
+fire_blocks.list <- list.files(paste0(getwd(),"./data/spatial_data/fire_blocks"), pattern = "\\.shp$", full.names=TRUE)
 
 fire_blocks <- lapply(fire_blocks.list, raster::shapefile)
 
@@ -664,7 +665,7 @@ bckgr_all_tsf <- do.call("rbind", c(rndm_block, bmodel_block, bfile_block))
 bckgr_all_tsf$tsf<-NA
 
 # load fire polygons
-fire_poly <- shapefile("./spatial_data/WF_allyears_bckgr.shp")
+fire_poly <- shapefile("./data/spatial_data/polygons/WF_allyears_bckgr.shp")
 crs(fire_poly) <- ("+init=epsg:3577")
 
 valNF <- 117    # set value for oldest fires in the study area.
@@ -695,7 +696,7 @@ for(i in 1:length(sites_fires_bckgr)){
 bckgr_all_tsf <- as.data.frame(bckgr_all_tsf) # 
 
 # remove records with 0 values of TSF. 
-bckgr_all_tsf <- filter(bckgr_all_tsf, tsf >= 1) # n =  535923
+bckgr_all_tsf <- filter(bckgr_all_tsf, tsf >= 1) # n =  535873. This number might vary slighty when replicating.
 
 
 
@@ -734,7 +735,7 @@ for(i in 1:length(sites_fires_tgb)){
 tgb_tsf <- as.data.frame(tgb_tsf) 
 
 # remove records with 0 values of TSF. 
-tgb_tsf <- filter(tgb_tsf, tsf >= 1) # n =  41650
+tgb_tsf <- filter(tgb_tsf, tsf >= 1) # n =  41741. This number might vary slighty when replicating.
 
 
 
@@ -793,7 +794,7 @@ fit.set_all <- filter(fit.set_all, tsf >= 1)
 ##### Prepare variables
 
 # All variables have been resampled (500 m), projected (epsg:3577) and masked to modelling extent
-vars_stack_all <- raster::stack(list.files(paste0(getwd(),"./spatial_data/variables_model"), pattern = '.asc', full.names=TRUE))
+vars_stack_all <- raster::stack(list.files(paste0(getwd(),"./data/environmental_variables"), pattern = '.asc', full.names=TRUE))
 crs(vars_stack_all) <- ("+init=epsg:3577")
 
 names(vars_stack_all)
@@ -889,7 +890,7 @@ extract_all <- as.data.frame(raster::extract(subset(vars_stack, c(1:9,11,12)), e
 
 extract_all <- na.omit(extract_all)
 
-# save(extract_all, file = "./outputs/extract_all.RData") # can save 
+# save(extract_all, file = "./outputs/processed_data/extract_all.RData") # can save 
 
 #### separate into sets
 
@@ -910,26 +911,34 @@ PA_extract <- extract_all[extract_all$id_set %in% "PA", ]
 PA_PIA_extract <- extract_all[extract_all$id_set %in% "PA_PIA", ]
 PB_extract <- extract_all[extract_all$id_set %in% "PB", ]
 
-# Save these as the datasets to fit final models with ALL data available. 
 # Background datasets are subsampled to 100,000 points here. These 100,000 points are sampled irrespective of external evaluation blocks as these objects will be used to fit final models only.
-
 rndm_bckgr_fmodel <- dplyr::sample_n(rndm_extract, size = 100000, replace = FALSE)
 bmodel_bckgr_fmodel <- dplyr::sample_n(bmodel_extract, size = 100000, replace = FALSE)
 bfile_bckgr_fmodel <- dplyr::sample_n(bfile_extract, size = 100000, replace = FALSE)
 
+
+### Save these as the datasets to fit final models with ALL data available. 
 tgb_bckgr_fmodel <- as.data.frame(tgb_extract)
 PA_fmodel <- as.data.frame(PA_extract)
 PA_PIA_fmodel <- as.data.frame(PA_PIA_extract)
 PB_fmodel <- as.data.frame(PB_extract)
 
+### Objects PA_fmodel and PA_PIA_fmodel contain the absences matched from the SFB dataset. At this point those absence records still have the species' name of the original record (whereas absences inferred from survey data, other than SFB, are already labelled as "inferred_absence"). Here, I will change the name of these records (absences 'processed' in the SFB dataset), which are effectively treated as absences to SFB_absence.
+
+PA_fmodel$species <- as.character(PA_fmodel$species)
+PA_fmodel$species[!PA_fmodel$species %in% c("Petauroides volans", "Petauroides volans minor")] <- "SFB_absence"
+
+PA_PIA_fmodel$species <- as.character(PA_PIA_fmodel$species)
+PA_PIA_fmodel$species[!PA_PIA_fmodel$species %in% c("Petauroides volans", "Petauroides volans minor", "inferred_absence")] <- "SFB_absence"
+
 # # save objects
-# save(rndm_bckgr_fmodel, file="./outputs/rndm_bckgr_fmodel.RData")
-# save(bmodel_bckgr_fmodel, file="./outputs/bmodel_bckgr_fmodel.RData")
-# save(bfile_bckgr_fmodel, file="./outputs/bfile_bckgr_fmodel.RData")
-# save(tgb_bckgr_fmodel, file="./outputs/tgb_bckgr_fmodel.RData")
-# save(PA_fmodel, file="./outputs/PA_fmodel.RData")
-# save(PA_PIA_fmodel, file="./outputs/PA_PIA_fmodel.RData")
-# save(PB_fmodel, file="./outputs/PB_fmodel.RData")
+# save(rndm_bckgr_fmodel, file="./outputs/processed_data/rndm_bckgr_fmodel.RData")
+# save(bmodel_bckgr_fmodel, file="./outputs/processed_data/bmodel_bckgr_fmodel.RData")
+# save(bfile_bckgr_fmodel, file="./outputs/processed_data/bfile_bckgr_fmodel.RData")
+# save(tgb_bckgr_fmodel, file="./outputs/processed_data/tgb_bckgr_fmodel.RData")
+# save(PA_fmodel, file="./outputs/processed_data/PA_fmodel.RData")
+# save(PA_PIA_fmodel, file="./outputs/processed_data/PA_PIA_fmodel.RData")
+# save(PB_fmodel, file="./outputs/processed_data/PB_fmodel.RData")
 
 
 
@@ -986,9 +995,9 @@ crs(loc.df_eval) <- ("+init=epsg:3577")
 # rm(blocks_syst) # too heavy, remove
 
 # load blocks
-block1_syst <- shapefile("./spatial_data/block1_syst.shp")
-block2_syst <- shapefile("./spatial_data/block2_syst.shp")
-block3_syst <- shapefile("./spatial_data/block3_syst.shp")
+block1_syst <- shapefile("./data/spatial_data/eval_blocks/block1_syst.shp")
+block2_syst <- shapefile("./data/spatial_data/eval_blocks/block2_syst.shp")
+block3_syst <- shapefile("./data/spatial_data/eval_blocks/block3_syst.shp")
 
 #### get location of blocks that have evaluation data
 
@@ -1447,36 +1456,36 @@ bfile_bckgr_3 <- dplyr::sample_n(bfile_fit_3, size = 100000, replace = FALSE)
 # ### save R objects
 # 
 # ### Set 1 
-# save(PA_fit_1, file = "./outputs/PA_fit_1.RData")
-# save(PA_PIA_fit_1, file = "./outputs/PA_PIA_fit_1.RData")
-# save(PB_fit_1, file = "./outputs/PB_fit_1.RData")
-# save(rndm_bckgr_1, file = "./outputs/rndm_bckgr_1.RData")
-# save(bmodel_bckgr_1, file = "./outputs/bmodel_bckgr_1.RData")
-# save(bfile_bckgr_1, file = "./outputs/bfile_bckgr_1.RData")
-# save(tgb_bckgr_1, file = "./outputs/tgb_bckgr_1.RData")
+# save(PA_fit_1, file = "./outputs/processed_data/PA_fit_1.RData")
+# save(PA_PIA_fit_1, file = "./outputs/processed_data/PA_PIA_fit_1.RData")
+# save(PB_fit_1, file = "./outputs/processed_data/PB_fit_1.RData")
+# save(rndm_bckgr_1, file = "./outputs/processed_data/rndm_bckgr_1.RData")
+# save(bmodel_bckgr_1, file = "./outputs/processed_data/bmodel_bckgr_1.RData")
+# save(bfile_bckgr_1, file = "./outputs/processed_data/bfile_bckgr_1.RData")
+# save(tgb_bckgr_1, file = "./outputs/processed_data/tgb_bckgr_1.RData")
 # 
 # ### Set 2 
-# save(PA_fit_2, file = "./outputs/PA_fit_2.RData")
-# save(PA_PIA_fit_2, file = "./outputs/PA_PIA_fit_2.RData")
-# save(PB_fit_2, file = "./outputs/PB_fit_2.RData")
-# save(rndm_bckgr_2, file = "./outputs/rndm_bckgr_2.RData")
-# save(bmodel_bckgr_2, file = "./outputs/bmodel_bckgr_2.RData")
-# save(bfile_bckgr_2, file = "./outputs/bfile_bckgr_2.RData")
-# save(tgb_bckgr_2, file = "./outputs/tgb_bckgr_2.RData")
+# save(PA_fit_2, file = "./outputs/processed_data/PA_fit_2.RData")
+# save(PA_PIA_fit_2, file = "./outputs/processed_data/PA_PIA_fit_2.RData")
+# save(PB_fit_2, file = "./outputs/processed_data/PB_fit_2.RData")
+# save(rndm_bckgr_2, file = "./outputs/processed_data/rndm_bckgr_2.RData")
+# save(bmodel_bckgr_2, file = "./outputs/processed_data/bmodel_bckgr_2.RData")
+# save(bfile_bckgr_2, file = "./outputs/processed_data/bfile_bckgr_2.RData")
+# save(tgb_bckgr_2, file = "./outputs/processed_data/tgb_bckgr_2.RData")
 # 
 # ### Set 3 
-# save(PA_fit_3, file = "./outputs/PA_fit_3.RData")
-# save(PA_PIA_fit_3, file = "./outputs/PA_PIA_fit_3.RData")
-# save(PB_fit_3, file = "./outputs/PB_fit_3.RData")
-# save(rndm_bckgr_3, file = "./outputs/rndm_bckgr_3.RData")
-# save(bmodel_bckgr_3, file = "./outputs/bmodel_bckgr_3.RData")
-# save(bfile_bckgr_3, file = "./outputs/bfile_bckgr_3.RData")
-# save(tgb_bckgr_3, file = "./outputs/tgb_bckgr_3.RData")
+# save(PA_fit_3, file = "./outputs/processed_data/PA_fit_3.RData")
+# save(PA_PIA_fit_3, file = "./outputs/processed_data/PA_PIA_fit_3.RData")
+# save(PB_fit_3, file = "./outputs/processed_data/PB_fit_3.RData")
+# save(rndm_bckgr_3, file = "./outputs/processed_data/rndm_bckgr_3.RData")
+# save(bmodel_bckgr_3, file = "./outputs/processed_data/bmodel_bckgr_3.RData")
+# save(bfile_bckgr_3, file = "./outputs/processed_data/bfile_bckgr_3.RData")
+# save(tgb_bckgr_3, file = "./outputs/processed_data/tgb_bckgr_3.RData")
 # 
 # # evaluation datasets
-# save(PA_PIA_eval_1, file = "./outputs/PA_PIA_eval_1.RData")
-# save(PA_PIA_eval_2, file = "./outputs/PA_PIA_eval_2.RData")
-# save(PA_PIA_eval_3, file = "./outputs/PA_PIA_eval_3.RData")
+# save(PA_PIA_eval_1, file = "./outputs/processed_data/PA_PIA_eval_1.RData")
+# save(PA_PIA_eval_2, file = "./outputs/processed_data/PA_PIA_eval_2.RData")
+# save(PA_PIA_eval_3, file = "./outputs/processed_data/PA_PIA_eval_3.RData")
 
 
 
@@ -1486,13 +1495,13 @@ bfile_bckgr_3 <- dplyr::sample_n(bfile_fit_3, size = 100000, replace = FALSE)
 # obtain evaluation records from southern half of study area
 
 # load VIC and NSW polygon
-vic_poly <- shapefile("./spatial_data/vic3577.shp")
+vic_poly <- shapefile("./data/spatial_data/polygons/vic3577.shp")
 crs(vic_poly) <- ("+init=epsg:3577")
 
-nsw_poly <- shapefile("./spatial_data/vic3577.shp")
+nsw_poly <- shapefile("./data/spatial_data/polygons/nsw3577.shp")
 crs(nsw_poly) <- ("+init=epsg:3577")
 
-vic_nsw <- bind(vic_poly, nsw_poly) # combine int single polygon
+vic_nsw <- bind(vic_poly, nsw_poly) # combine into single polygon
 
 # Set_1
 coordinates(PA_PIA_eval_1) <- c(4,5)
@@ -1509,7 +1518,7 @@ coordinates(PA_PIA_eval_3) <- c(4,5)
 crs(PA_PIA_eval_3) <- ("+init=epsg:3577")
 PA_PIA_eval_3_south <- as.data.frame(PA_PIA_eval_3[vic_nsw,])
 
-# # save objects
-# save(PA_PIA_eval_1_south, file ="./outputs/PA_PIA_eval_1_south.RData")
-# save(PA_PIA_eval_2_south, file ="./outputs/PA_PIA_eval_2_south.RData")
-# save(PA_PIA_eval_3_south, file ="./outputs/PA_PIA_eval_3_south.RData")
+# # save objects if working in models in a different project.
+# save(PA_PIA_eval_1_south, file ="./outputs/processed_data/PA_PIA_eval_1_south.RData")
+# save(PA_PIA_eval_2_south, file ="./outputs/processed_data/PA_PIA_eval_2_south.RData")
+# save(PA_PIA_eval_3_south, file ="./outputs/processed_data/PA_PIA_eval_3_south.RData")

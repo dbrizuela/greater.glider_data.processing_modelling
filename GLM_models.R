@@ -28,44 +28,44 @@ library(caret)
 # 
 # ### PA
 # # Set 1
-# load("./outputs/PA_fit_1.RData")
+# load("./outputs/processed_data/PA_fit_1.RData")
 # # Set 2
-# load("./outputs/PA_fit_2.RData")
+# load("./outputs/processed_data/PA_fit_2.RData")
 # # Set 3
-# load("./outputs/PA_fit_3.RData")
+# load("./outputs/processed_data/PA_fit_3.RData")
 # 
 # ### PA_PIA
 # # Set 1
-# load("./outputs/PA_PIA_fit_1.RData")
+# load("./outputs/processed_data/PA_PIA_fit_1.RData")
 # # Set 2
-# load("./outputs/PA_PIA_fit_2.RData")
+# load("./outputs/processed_data/PA_PIA_fit_2.RData")
 # # Set 3
-# load("./outputs/PA_PIA_fit_3.RData")
+# load("./outputs/processed_data/PA_PIA_fit_3.RData")
 # 
 # ### External evaluation sets
 # # Set 1
-# load("./outputs/PA_PIA_eval_1.RData")
+# load("./outputs/processed_data/PA_PIA_eval_1.RData")
 # # Set 2
-# load("./outputs/PA_PIA_eval_2.RData")
+# load("./outputs/processed_data/PA_PIA_eval_2.RData")
 # # Set 3
-# load("./outputs/PA_PIA_eval_3.RData")
+# load("./outputs/processed_data/PA_PIA_eval_3.RData")
 # 
 # 
 # ### External evaluation sets Southern half
 # # Set 1
-# load("./outputs/PA_PIA_eval_1_south.RData")
+# load("./outputs/processed_data/PA_PIA_eval_1_south.RData")
 # # Set 2
-# load("./outputs/PA_PIA_eval_2_south.RData")
+# load("./outputs/processed_data/PA_PIA_eval_2_south.RData")
 # # Set 3
-# load("./outputs/PA_PIA_eval_3_south.RData")
+# load("./outputs/processed_data/PA_PIA_eval_3_south.RData")
 # 
 # 
 # ### Final models sets
 # 
 # # PA 
-# load("./outputs/PA_fmodel.RData")
+# load("./outputs/processed_data/PA_fmodel.RData")
 # # PA_PIA
-# load("./outputs/PA_PIA_fmodel.RData")
+# load("./outputs/processed_data/PA_PIA_fmodel.RData")
 # 
 # str(PA_fit_1)
 # 
@@ -98,7 +98,7 @@ library(caret)
 ### This is done in the 'data_processing' script as well:
 
 # # All variables have been resampled (500 m), projected (epsg:3577) and masked to modelling extent
-# vars_stack_all <- raster::stack(list.files(paste0(getwd(),"./spatial_data/variables_model"), pattern = '.asc', full.names=TRUE))
+# vars_stack_all <- raster::stack(list.files(paste0(getwd(),"./data/environmental_variables"), pattern = '.asc', full.names=TRUE))
 # crs(vars_stack_all) <- ("+init=epsg:3577")
 # 
 # names(vars_stack_all)
@@ -232,7 +232,7 @@ summary(GLM_PA_back)
 GLM_PIA_back <- step.Gam(GLM_PIA, scope = glm.scope, direction= "backward", trace = T)
 
 # save
-# save(GLM_PIA_back, file = "./outputs/GLM_PIA_back.RData")
+# save(GLM_PIA_back, file = "./outputs/models/GLM_PIA_back.RData")
 
 summary(GLM_PIA_back)
 # Call:
@@ -287,7 +287,7 @@ sb_PA <- spatialBlock(speciesData = loc_PA_sdf,
                       showBlocks = T,
                       biomod2Format = FALSE)
 
-# save(sb_PA, file = "./outputs/sb_PA.RData")
+# save(sb_PA, file = "./outputs/spatial_blocks/sb_PA.RData")
 
 ### PA_PIA
 locations_PIA <- PA_PIA_fmodel[,c(4:5)]
@@ -305,7 +305,7 @@ sb_PIA <- spatialBlock(speciesData = loc_PIA_sdf,
                        showBlocks = T,
                        biomod2Format = FALSE)
 
-# save(sb_PIA, file = "./outputs/sb_PIA.RData")
+# save(sb_PIA, file = "./outputs/spatial_blocks/sb_PIA.RData")
 
 
 

@@ -1,5 +1,7 @@
 ### Script to fit boosted regression trees models across the entire distribution range of the greater glider
 
+### All required data is loaded in the script for fitting GLMs
+
 #################### Internal evaluation with BlockCV ####################
 
 ##### PA

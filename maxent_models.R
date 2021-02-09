@@ -29,71 +29,88 @@ library(rgeos)
 # ##### presences (1 per 500m cell) and removed from eval blocks
 # ### Sets for external evaluation
 # # Set 1
-# load("./outputs/PB_fit_1.RData")
+# load("./outputs/processed_data/PB_fit_1.RData")
 # # Set 2
-# load("./outputs/PB_fit_2.RData")
+# load("./outputs/processed_data/PB_fit_2.RData")
 # # Set 3
-# load("./outputs/PB_fit_3.RData")
+# load("./outputs/processed_data/PB_fit_3.RData")
 # ### Set for final models
-# load("./outputs/PB_fmodel.RData")
+# load("./outputs/processed_data/PB_fmodel.RData")
 # 
 # 
 # ##### rndm bckgr points. 1 per 500m cell, removed from eval blocks. sample of 100000
 # ### Sets for external evaluation
 # # Set 1
-# load("./outputs/rndm_bckgr_1.RData")
+# load("./outputs/processed_data/rndm_bckgr_1.RData")
 # # Set 2
-# load("./outputs/rndm_bckgr_2.RData")
+# load("./outputs/processed_data/rndm_bckgr_2.RData")
 # # Set 3
-# load("./outputs/rndm_bckgr_3.RData")
+# load("./outputs/processed_data/rndm_bckgr_3.RData")
 # ### Set for final models
-# load("./outputs/rndm_bckgr_fmodel.RData") 
+# load("./outputs/processed_data/rndm_bckgr_fmodel.RData") 
 # 
 # 
 # ##### bmodel bckgr points. 1 per 500m cell, removed from eval blocks. sample of 100000
 # ### Sets for external evaluation
 # # Set 1
-# load("./outputs/bmodel_bckgr_1.RData")
+# load("./outputs/processed_data/bmodel_bckgr_1.RData")
 # # Set 2
-# load("./outputs/bmodel_bckgr_2.RData")
+# load("./outputs/processed_data/bmodel_bckgr_2.RData")
 # # Set 3
-# load("./outputs/bmodel_bckgr_3.RData") 
+# load("./outputs/processed_data/bmodel_bckgr_3.RData") 
 # ### Set for final models
-# load("./outputs/bmodel_bckgr_fmodel.RData") 
+# load("./outputs/processed_data/bmodel_bckgr_fmodel.RData") 
 # 
 # 
 # ##### bfile bckgr points. 1 per 500m cell, removed from eval blocks. sample of 100000
 # ### Sets for external evaluation
 # # Set 1
-# load("./outputs/bfile_bckgr_1.RData")
+# load("./outputs/processed_data/bfile_bckgr_1.RData")
 # # Set 2
-# load("./outputs/bfile_bckgr_2.RData")
+# load("./outputs/processed_data/bfile_bckgr_2.RData")
 # # Set 3
-# load("./outputs/bfile_bckgr_3.RData")
+# load("./outputs/processed_data/bfile_bckgr_3.RData")
 # ### Set for final models
-# load("./outputs/bfile_bckgr_fmodel.RData") 
+# load("./outputs/processed_data/bfile_bckgr_fmodel.RData") 
 # 
 # 
 # ##### tgb bckgr points. 1 per 500m cell, removed from eval blocks.
 # ### Sets for external evaluation
 # # Set 1
-# load("./outputs/tgb_bckgr_1.RData")
+# load("./outputs/processed_data/tgb_bckgr_1.RData")
 # # Set 2
-# load("./outputs/tgb_bckgr_2.RData")
+# load("./outputs/processed_data/tgb_bckgr_2.RData")
 # # Set 3
-# load("./outputs/tgb_bckgr_3.RData")
+# load("./outputs/processed_data/tgb_bckgr_3.RData")
 # ### Set for final models
-# load("./outputs/tgb_bckgr_fmodel.RData")
+# load("./outputs/processed_data/tgb_bckgr_fmodel.RData")
 # 
 # 
 # ##### eval dataset all
 # ### evaluation sets for external evaluation
 # # Set 1
-# load("./outputs/PA_PIA_eval_1.RData")
+# load("./outputs/processed_data/PA_PIA_eval_1.RData")
 # # Set 2
-# load("./outputs/PA_PIA_eval_2.RData")
+# load("./outputs/processed_data/PA_PIA_eval_2.RData")
 # # Set 3
-# load("./outputs/PA_PIA_eval_3.RData")
+# load("./outputs/processed_data/PA_PIA_eval_3.RData")
+
+# ### External evaluation sets Southern half
+# # Set 1
+# load("./outputs/processed_data/PA_PIA_eval_1_south.RData")
+# # Set 2
+# load("./outputs/processed_data/PA_PIA_eval_2_south.RData")
+# # Set 3
+# load("./outputs/processed_data/PA_PIA_eval_3_south.RData")
+
+# # for some reason everytime I upload these again, PA column becomes factor, so change to numeric:
+# PA_PIA_eval_1$PA <- as.numeric(levels(PA_PIA_eval_1$PA))[PA_PIA_eval_1$PA]
+# PA_PIA_eval_2$PA <- as.numeric(levels(PA_PIA_eval_2$PA))[PA_PIA_eval_2$PA]
+# PA_PIA_eval_3$PA <- as.numeric(levels(PA_PIA_eval_3$PA))[PA_PIA_eval_3$PA]
+# 
+# PA_PIA_eval_1_south$PA <- as.numeric(levels(PA_PIA_eval_1_south$PA))[PA_PIA_eval_1_south$PA]
+# PA_PIA_eval_2_south$PA <- as.numeric(levels(PA_PIA_eval_2_south$PA))[PA_PIA_eval_2_south$PA]
+# PA_PIA_eval_3_south$PA <- as.numeric(levels(PA_PIA_eval_3_south$PA))[PA_PIA_eval_3_south$PA]
 
 
 
@@ -104,7 +121,7 @@ library(rgeos)
 ### This is done in the 'data_processing' script as well:
 
 # # All variables have been resampled (500 m), projected (epsg:3577) and masked to modelling extent
-# vars_stack_all <- raster::stack(list.files(paste0(getwd(),"./spatial_data/variables_model"), pattern = '.asc', full.names=TRUE))
+# vars_stack_all <- raster::stack(list.files(paste0(getwd(),"./spatial_data/environmental_variables"), pattern = '.asc', full.names=TRUE))
 # crs(vars_stack_all) <- ("+init=epsg:3577")
 # 
 # names(vars_stack_all)
@@ -846,11 +863,11 @@ save(ext_eval_maxent, file="./outputs/models/ext_eval_maxent.RData")
 
 # load eval south sets
 # Set 1
-load("./outputs/PA_PIA_eval_1_south.RData")
+load("./outputs/processed_data/PA_PIA_eval_1_south.RData")
 # Set 2
-load("./outputs/PA_PIA_eval_2_south.RData")
+load("./outputs/processed_data/PA_PIA_eval_2_south.RData")
 # Set 3
-load("./outputs/PA_PIA_eval_3_south.RData")
+load("./outputs/processed_data/PA_PIA_eval_3_south.RData")
 
 
 ##### Random background
